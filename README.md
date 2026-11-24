@@ -21,7 +21,7 @@ Sav tekst Biblije dolazi iz njihovog repozitorija. Ovdje je samo obrada za Logos
 ## Kako dodati u Logos
 
 1. Preuzmi `osjecka_biblija_logos.docx`.
-2. U Logosu otvori **Tools → Personal Books** i dodaj novu knjigu.
+2. U Logosu otvori **Tools → Personal Books** i dodaj novu knjigu, tip:Bible
 3. Dodaj `.docx`, upiši naslov (npr. "Osječka Biblija") i pokreni **Build Book**.
 
 Knjiga koristi Logos datatype `bible` (standardna numeracija). Build prolazi bez upozorenja.
