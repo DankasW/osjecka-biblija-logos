@@ -1,0 +1,66 @@
+# Jednom tjedno provjeri ima li u izvornom repozitoriju novi commit.
+# Ako ima: preuzmi JSON, napravi novu Logos knjigu i commitaj je ovdje.
+# Ako nema: ne radi nista. Rucno pokretanje: Actions -> "Azuriraj Logos knjigu" -> Run workflow.
+name: Azuriraj Logos knjigu
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # svaki ponedjeljak u 6:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  azuriraj:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ima li novi commit u izvoru?
+        id: izvor
+        run: |
+          novi=$(git ls-remote https://github.com/dario-nop/osjecka_biblija.git HEAD | cut -f1)
+          stari=$(cat UPSTREAM_COMMIT 2>/dev/null || true)
+          echo "commit=$novi" >> "$GITHUB_OUTPUT"
+          if [ "$novi" = "$stari" ]; then echo "promjena=ne" >> "$GITHUB_OUTPUT"; echo "Nema promjena ($novi)."; else echo "promjena=da" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Preuzmi izvor
+        if: steps.izvor.outputs.promjena == 'da'
+        run: git clone --depth 1 https://github.com/dario-nop/osjecka_biblija.git izvor
+
+      - uses: actions/setup-python@v5
+        if: steps.izvor.outputs.promjena == 'da'
+        with:
+          python-version: "3.12"
+
+      - name: Napravi Logos knjigu
+        if: steps.izvor.outputs.promjena == 'da'
+        run: |
+          pip install python-docx
+          json=$(ls izvor/osjecka_biblija_v*.json | sort -V | tail -1)
+          echo "JSON: $json"
+          python obh_json_u_md.py "$json" md
+          python logos_bible.py md osjecka_biblija_logos.docx --type bible
+          # zastita: ne commitaj ako je knjiga ocito nepotpuna ili izvjestaj trazi provjeru
+          python - <<'EOF'
+          import docx, re
+          t = "\n".join(p.text for p in docx.Document("osjecka_biblija_logos.docx").paragraphs)
+          n = t.count("{{field-on:bible}}")
+          assert n > 30000 and n == t.count("{{field-off:bible}}"), f"sumnjiv broj stihova: {n}"
+          rep = open("osjecka_biblija_logos_report.md", encoding="utf-8").read()
+          stavke = int(re.search(r"Za rucnu provjeru \((\d+)\)", rep)[1])
+          assert stavke == 0, f"izvjestaj ima {stavke} stavki za provjeru:\n{rep}"
+          print("Stihova:", n)
+          EOF
+          echo "${{ steps.izvor.outputs.commit }}" > UPSTREAM_COMMIT
+          echo "VERZIJA=$(basename "$json" .json | sed 's/osjecka_biblija_//')" >> "$GITHUB_ENV"
+
+      - name: Commitaj novu verziju
+        if: steps.izvor.outputs.promjena == 'da'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add osjecka_biblija_logos.docx UPSTREAM_COMMIT
+          git commit -m "Logos knjiga iz izvora $VERZIJA (${{ steps.izvor.outputs.commit }})" || echo "Knjiga je ista, nema sto commitati."
+          git push

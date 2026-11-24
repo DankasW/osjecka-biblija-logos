@@ -26,7 +26,15 @@ Sav tekst Biblije dolazi iz njihovog repozitorija. Ovdje je samo obrada za Logos
 
 Knjiga koristi Logos datatype `bible` (standardna numeracija). Build prolazi bez upozorenja.
 
-## Kako ponovo napraviti knjigu (nova verzija izvornika)
+## Automatsko ažuriranje
+
+GitHub Actions jednom tjedno (ponedjeljkom) provjeri ima li u [izvornom repozitoriju](https://github.com/dario-nop/osjecka_biblija) novi commit. Ako ima, sam napravi novu `osjecka_biblija_logos.docx` i commita je ovdje, s verzijom izvornika u poruci. Zadnji obrađeni commit izvora zapisan je u `UPSTREAM_COMMIT`.
+
+Prije commita provjerava da knjiga ima više od 30.000 stihova, da su sva polja zatvorena i da izvještaj nema stavki za ručnu provjeru. Ako nešto ne valja, ne commita ništa i javi grešku. Ručno se pokreće pod **Actions → Azuriraj Logos knjigu → Run workflow**.
+
+Nakon ažuriranja knjigu treba ponovo preuzeti i buildati u Logosu.
+
+## Kako ponovo napraviti knjigu ručno
 
 Potreban je Python 3 i paket `python-docx` (`pip install python-docx`).
 

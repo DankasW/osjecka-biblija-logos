@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 osjecka_biblija/
 Osječka Biblija/
+izvor/
+md/
+*_report.md
